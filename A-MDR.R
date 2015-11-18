@@ -43,13 +43,19 @@ CMDR<-function(data=DATA,n.repeat=100,missing=999,loci=2,alpha=0.05, genotype = 
     counts <- matrix(0, dim(case)[1], 3); colnames(counts) <- c('case', 'ctrl', 'ratio')	#k-way genotype combinations - ratiol of cases/controls
     
     for (j1 in 1:n_interaction))                                    
+    y<-PermData[i2,]                                                     #Data for permutation (cases vs controls)
+    
+    stat <-OR<-RR<-pstat<-pOR<-pRR<-rep(NULL,n_interaction)              #empty vector
+    lowrisk<-highrisk<-matrix(999, nrow=n_interaction,ncol=2)            #empty matrix for predisposing risk table
+    colnames(lowrisk) = c('case', 'control'); colnames(highrisk) = c('case', 'control') 
+    
+    case <- cbind(rep(1, g^loci), expand.grid(rep(geno, loci)))  	#genotype cases 
+    ctrl <- cbind(rep(0, g^loci), expand.grid(rep(geno, loci)))		#genotype controls
+    counts <- matrix(0, dim(case)[1], 3); colnames(counts) <- c('case', 'ctrl', 'ratio')	#k-way genotype combinations - ratiol of cases/controls
+    
+    #loop for running through GxG interactions to determing high/low risk genotypes
+    for (j1 in 1:n_interaction))                                    
     {
-      
-      pi0.func <- function(x){
-        if (x[1]/(x[1] + x[2]) >=  sum(y)/ length(y)){x[3] <- 1}
-        else {x[3] <- 0}
-      }
-      
       model <- interaction[i, ]                                          #spcifing the interaction between SNPs
       
       part <- data[,c(model)]
@@ -62,49 +68,19 @@ CMDR<-function(data=DATA,n.repeat=100,missing=999,loci=2,alpha=0.05, genotype = 
             
       hr.lr[i, 2:ncol(hr.lr)] <- counts[,3]
       
-      n_size[i,] <- rowSums(counts[,1:2])
+      highrisk[i,] <- c(sum(counts[counts[,3] == 1, 1]), sum(counts[counts[,3] == 1, 2])) #sum highrisk cases/controls
+      lowrisk[i,] <- c(sum(counts[counts[,3] == 0, 1]), sum(counts[counts[,3] == 0, 2]))  #sum lowrisk cases/controls
       
-      lowrisk[i,] <- c(sum(counts[,1][(counts[,1]/n_size[i,])<sum(counts[,1])/sum(n_size[i,])&n_size[i,]>0]), sum(counts[,2][(counts[,1]/n_size[i,])<sum(counts[,1])/sum(n_size[i,])&n_size[i,]>0]))
-      highrisk[i,] <- c(sum(counts[,1][(counts[,1]/n_size[i,])>=sum(counts[,1])/sum(n_size[i,])&n_size[i,]>0]), sum(counts[,2][(counts[,1]/n_size[i,])>=sum(counts[,1])/sum(n_size[i,])&n_size[i,]>0]))
-        
-        for (k in 1:dim(unique(data[,c(j1,j2)]))[1])                         #loop for genotypic combinations in SNPxSNP matrix  
-        {
-          #number of controls in genotypic combination
-          control[i,k] <-sum(y[data[,j1]==unique(data[,c(j1,j2)])[k,1] & data[,j2]==unique(data[,c(j1,j2)])[k,2]]==0) 
-          #number of cases in genotypic combination
-          test[i,k]    <-sum(y[data[,j1]==unique(data[,c(j1,j2)])[k,1] & data[,j2]==unique(data[,c(j1,j2)])[k,2]]==1)
-          tj1[i,k]<-unique(data[,c(j1,j2)])[k,1] #SNP 1: genotype in genotypic combination
-          tj2[i,k]<-unique(data[,c(j1,j2)])[k,2] #SNP 2: genotype in genotypic combination
-          # pi0 = equation, pg 3
-          #if percentage of cases in genotypic combination is greater then then percentage in total cohort tRF = 1
-          if (test[i,k]/max((control[i,k]+test[i,k]),1)>=  sum(y)/ length(y))   
-          {RF[,i][data[,j1]==unique(data[,c(j1,j2)])[k,1] & data[,j2]==unique(data[,c(j1,j2)])[k,2]]<-1
-           tRF[i,k]<-1
-          }
-          #if percentage of cases in genotypic combination is greater then then percentage in total cohort tRF = 0
-          if (test[i,k]/max((control[i,k]+test[i,k]),1)< sum(y)/ length(y))   
-          {RF[,i][data[,j1]==unique(data[,c(j1,j2)])[k,1] & data[,j2]==unique(data[,c(j1,j2)])[k,2]]<-0
-           tRF[i,k]<-0
-          }
-          
-        }
-        
-        n_size[i,]<-control[i,]+test[i,]                                     #n individules in genotypic combination
-        
-        #predisposing risk table, pg 4
-        lowrisk[i,]<-c(sum(test[i,][(test[i,]/n_size[i,])<sum(test[i,])/sum(n_size[i,])&n_size[i,]>0]), sum(control[i,][(test[i,]/n_size[i,])<sum(test[i,])/sum(n_size[i,])&n_size[i,]>0]))
-        highrisk[i,]<-c(sum(test[i,][(test[i,]/n_size[i,])>=sum(test[i,])/sum(n_size[i,])&n_size[i,]>0]), sum(control[i,][(test[i,]/n_size[i,])>=sum(test[i,])/sum(n_size[i,])&n_size[i,]>0]))
-        
-        OR[i]<-highrisk[i,1]*lowrisk[i,2]/highrisk[i,2]/lowrisk[i,1]                    #pOR, pg3 eq1 
-        RR[i]<-highrisk[i,1]/sum(highrisk[i,])/lowrisk[i,1]*sum(lowrisk[i,])            #pRR, pg4 eq2
-        stat[i]<-chisq.test(rbind(lowrisk[i,],highrisk[i,]),correct=FALSE)$statistic    #pChi pg5 eq3
-      }
+      OR[i]<-highrisk[i,1]*lowrisk[i,2]/highrisk[i,2]/lowrisk[i,1]                    #pOR, pg3 eq1 
+      RR[i]<-highrisk[i,1]/sum(highrisk[i,])/lowrisk[i,1]*sum(lowrisk[i,])            #pRR, pg4 eq2
+      stat[i]<-chisq.test(rbind(lowrisk[i,],highrisk[i,]),correct=FALSE)$statistic    #pChi pg5 eq3    
+    }
 
-    
-    RefOR[,i2]<-OR                                                                  #All and permuted and final pOR 
-    RefRR[,i2]<-RR                                                                  #All and permuted and final pRR
-    Refstat[,i2]<-stat                                                              #All and permuted and final pChi
+  RefOR[,i2]<-OR                                                                  #All and permuted and final pOR 
+  RefRR[,i2]<-RR                                                                  #All and permuted and final pRR
+  Refstat[,i2]<-stat                                                              #All and permuted and final pChi 
   }
+
   
   for (i3 in 1:length(stat))
   {
