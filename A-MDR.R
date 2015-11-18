@@ -81,26 +81,25 @@ CMDR<-function(data=DATA,n.repeat=100,missing=999,loci=2,alpha=0.05, genotype = 
     counts <- matrix(0, dim(case)[1], 3); colnames(counts) <- c('case', 'ctrl', 'ratio')	#k-way genotype combinations - ratiol of cases/controls
     
     #loop for running through GxG interactions to determing high/low risk genotypes
-    for (j1 in 1:n_interaction))                                    
+    for (j1 in 1:n_interaction)                                    
     {
-      model <- interaction[i, ]                                          #spcifing the interaction between SNPs
+      model <- interaction[j1, ]                                          #spcifing the interaction between SNPs
       
       part <- data[,c(model)]
-      part$response <- y
-      part <- part[,c(ncol(part), 1:ncol(part)-1)]
+      part <- cbind(y, part)
       
       counts[, 1] <- apply(case, 1, compare, mat = part, k = loci) #number of cases for k-kway interaction
       counts[, 2] <- apply(ctrl, 1, compare, mat = part, k = loci) #number of controls for k-way interactions 
       counts[, 3] <- apply(counts, 1, pi0.func)        		           #ratio of cases to controls for combination
             
-      hr.lr[i, 2:ncol(hr.lr)] <- counts[,3]
+      hr.lr[j1, 2:ncol(hr.lr)] <- counts[,3]
       
-      highrisk[i,] <- c(sum(counts[counts[,3] == 1, 1]), sum(counts[counts[,3] == 1, 2])) #sum highrisk cases/controls
-      lowrisk[i,] <- c(sum(counts[counts[,3] == 0, 1]), sum(counts[counts[,3] == 0, 2]))  #sum lowrisk cases/controls
+      highrisk[j1,] <- c(sum(counts[counts[,3] == 1, 1]), sum(counts[counts[,3] == 1, 2])) #sum highrisk cases/controls
+      lowrisk[j1,] <- c(sum(counts[counts[,3] == 0, 1]), sum(counts[counts[,3] == 0, 2]))  #sum lowrisk cases/controls
       
-      OR[i]<-highrisk[i,1]*lowrisk[i,2]/highrisk[i,2]/lowrisk[i,1]                    #pOR, pg3 eq1 
-      RR[i]<-highrisk[i,1]/sum(highrisk[i,])/lowrisk[i,1]*sum(lowrisk[i,])            #pRR, pg4 eq2
-      stat[i]<-chisq.test(rbind(lowrisk[i,],highrisk[i,]),correct=FALSE)$statistic    #pChi pg5 eq3    
+      OR[j1]<-highrisk[j1,1]*lowrisk[j1,2]/highrisk[j1,2]/lowrisk[j1,1]                    #pOR, pg3 eq1 
+      RR[j1]<-highrisk[j1,1]/sum(highrisk[j1,])/lowrisk[j1,1]*sum(lowrisk[j1,])            #pRR, pg4 eq2
+      stat[j1]<-chisq.test(rbind(lowrisk[j1,],highrisk[j1,]),correct=FALSE)$statistic    #pChi pg5 eq3    
     }
 
   RefOR[,i2]<-OR                                                                  #All and permuted and final pOR 
