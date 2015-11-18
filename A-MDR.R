@@ -1,3 +1,30 @@
+##-----------------------------------------##
+# Functions
+##-----------------------------------------##
+
+#classify genotypic combinations as high or low risk
+#pi0, equation pg 3
+pi0.func <- function(x){
+  if (x[1]/(x[1] + x[2]) >=  sum(y)/ length(y)){x[3] <- 1}
+  else {x[3] <- 0}
+}
+
+#counts the number of matches of an individual data vector with the rows of a target matrix, and is called by the function mdr
+#from package MDR
+compare <- function (mat, vec, k) 
+{
+  b <- 1
+  match <- 1:dim(mat)[1]
+  while (b <= (k + 1)) {
+    match <- match[mat[match, b] == as.numeric(vec[b])]
+    b <- b + 1
+  }
+  return(length(match))
+}
+
+
+##-----------------------------------------##
+
 dat <- as.data.frame(rbind(c(0,2,1,1),
                            c(1,1,1,0),
                            c(2,0,1,1),
